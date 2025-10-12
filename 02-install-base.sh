@@ -24,6 +24,7 @@ pacstrap /mnt xorg-server xorg-xinit xorg-apps \
 pacstrap /mnt ttf-dejavu ttf-liberation noto-fonts \
     pulseaudio wireplumber pulseaudio-alsa pavucontrol
 
+
 # Generate fstab
 genfstab -U /mnt >> /mnt/etc/fstab
 
