@@ -69,8 +69,8 @@ fi
 
 # Format partitions
 mkfs.fat -F32 "$EFI_PART"
-mkfs.ext4 "$ROOT_PART"
-mkfs.ext4 "$HOME_PART"
+mkfs.ext4 -F "$ROOT_PART"
+mkfs.ext4 -F "$HOME_PART"
 
 # Mount partitions
 mount "$ROOT_PART" /mnt
@@ -87,7 +87,7 @@ pacstrap /mnt base linux linux-firmware linux-headers nano vim git sudo bash-com
     networkmanager dhclient grub efibootmgr os-prober xorg-server xorg-xinit xorg-apps \
     mesa mesa-utils swaybg swaylock wayland-protocols polkit polkit-gnome \
     python python-pip ttf-dejavu ttf-liberation noto-fonts pulseaudio wireplumber \
-    pulseaudio-alsa pavucontrol brightnessctl nautilus gnome-control-center tlp tar wl-clipboard
+    pulseaudio-alsa pavucontrol brightnessctl nautilus gnome-control-center tlp tar wl-clipboard --noconfirm
 
 # Generate fstab
 genfstab -U /mnt >> /mnt/etc/fstab
@@ -105,8 +105,6 @@ echo "LANG=en_US.UTF-8" > /etc/locale.conf
 
 # Hostname
 echo "$HOSTNAME" > /etc/hostname
-echo "127.0.0.1 localhost" >> /etc/hosts
-echo "::1       localhost" >> /etc/hosts
 echo "127.0.1.1 $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
 
 # Root password
@@ -124,13 +122,22 @@ grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --re
 echo "GRUB_DISABLE_OS_PROBER=false" >> /etc/default/grub
 grub-mkconfig -o /boot/grub/grub.cfg
 
-# Swapfile
-SWAP_SIZE=4096
-fallocate -l ${SWAP_SIZE}M /swapfile
-chmod 600 /swapfile
-mkswap /swapfile
-swapon /swapfile
-echo "/swapfile none swap defaults 0 0" >> /etc/fstab
+
+
+# create mountpoint for swap (optional)
+mkdir -p /swap
+fallocate -l 16G /swap/swapfile
+chmod 600 /swap/swapfile
+mkswap /swap/swapfile
+swapon /swap/swapfile
+
+# make it permanent:
+echo '/swap/swapfile none swap defaults 0 0' >> /etc/fstab
+
+
+
+
+
 
 # Enable NetworkManager
 systemctl enable NetworkManager
