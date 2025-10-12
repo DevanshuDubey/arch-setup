@@ -7,6 +7,8 @@ chmod +x *.sh
 ./03-chroot-setup.sh
 ./04-user-setup.sh
 ./05-grub-swap.sh
+./06-aur.sh
+
 
 echo "=== Installation complete! You can reboot now ==="
 umount -R /mnt
