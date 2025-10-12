@@ -1,6 +1,8 @@
 #!/bin/bash
 chmod +x *.sh
 
+source ./interactive-config.sh
+
 ./00-partition.sh
 ./01-mount.sh
 ./02-install-base.sh

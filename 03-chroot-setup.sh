@@ -1,5 +1,4 @@
 #!/bin/bash
-source ./interactive-config.sh
 
 # Prompt for root password
 read -s -p "Enter root password: " ROOT_PASS

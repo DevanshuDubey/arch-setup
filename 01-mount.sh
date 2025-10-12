@@ -1,5 +1,4 @@
 #!/bin/bash
-source ./interactive-config.sh
 
 echo "=== Mounting partitions ==="
 mount $ROOT_PART /mnt

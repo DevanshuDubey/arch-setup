@@ -1,5 +1,4 @@
 #!/bin/bash
-source ./interactive-config.sh
 
 arch-chroot /mnt /bin/bash <<EOF
 echo "=== Creating user $USERNAME ==="

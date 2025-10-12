@@ -1,5 +1,4 @@
 #!/bin/bash
-source ./interactive-config.sh
 
 echo "=== Partitioning $DISK ==="
 
@@ -28,3 +27,4 @@ echo "=== Formatting partitions ==="
 mkfs.fat -F32 $EFI_PART
 mkfs.ext4 $ROOT_PART
 mkfs.ext4 $HOME_PART
+44
