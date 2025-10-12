@@ -2,7 +2,6 @@
 
 echo "=== Arch Installer Configuration ==="
 
-# Prompt helper function with default
 prompt_default() {
     local var_name=$1
     local prompt_msg=$2
@@ -11,32 +10,20 @@ prompt_default() {
     eval $var_name="${input:-$default_val}"
 }
 
-# Disk selection
+# Existing prompts...
 prompt_default DISK "Enter target disk (e.g., /dev/sdb)" "/dev/sdX"
-
-# EFI partition size
 prompt_default EFI_SIZE "Enter EFI partition size" "500M"
-
-# Root partition size
 prompt_default ROOT_SIZE "Enter root partition size" "100G"
-
-# Home partition size (default = rest of disk)
-HOME_SIZE="rest"
-
-# Username
 prompt_default USERNAME "Enter your username" "user"
-
-# Hostname
 prompt_default HOSTNAME "Enter your hostname" "archpc"
-
-# Swap size in MB
 prompt_default SWAP_SIZE "Enter swapfile size in MB" "4096"
-
-# Locale
 prompt_default LOCALE "Enter system locale" "en_US.UTF-8"
+prompt_default TIMEZONE "Enter timezone (Region/City)" "America/New_York"
 
-# Timezone
-prompt_default TIMEZONE "Enter timezone (Region/City)" "Asia/Kolkata"
+# Prompt for user password (hidden input)
+read -sp "Enter password for $USERNAME [default: user]: " USERPASS
+echo
+USERPASS=${USERPASS:-$USERNAME}   # Use username as default if nothing entered
 
 echo "=== Configuration complete ==="
 echo "DISK=$DISK"
@@ -47,3 +34,4 @@ echo "HOSTNAME=$HOSTNAME"
 echo "SWAP_SIZE=$SWAP_SIZE MB"
 echo "LOCALE=$LOCALE"
 echo "TIMEZONE=$TIMEZONE"
+echo "USERPASS=********"
