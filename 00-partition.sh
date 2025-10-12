@@ -20,9 +20,9 @@ parted -s $DISK mkpart ROOT ext4 $EFI_SIZE $ROOT_SIZE
 parted -s $DISK mkpart HOME ext4 $ROOT_SIZE 100%
 
 # Partition variables
-EFI_PART="${DISK}1"
-ROOT_PART="${DISK}2"
-HOME_PART="${DISK}3"
+EFI_PART="${DISK}p1"
+ROOT_PART="${DISK}p2"
+HOME_PART="${DISK}p3"
 
 echo "=== Formatting partitions ==="
 mkfs.fat -F32 $EFI_PART
