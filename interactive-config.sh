@@ -12,13 +12,13 @@ prompt_default() {
 
 # Existing prompts...
 prompt_default DISK "Enter target disk (e.g., /dev/sdb)" "/dev/sdX"
-prompt_default EFI_SIZE "Enter EFI partition size" "500M"
+prompt_default EFI_SIZE "Enter EFI partition size(MiB)" "500MiB"
 prompt_default ROOT_SIZE "Enter root partition size" "100G"
 prompt_default USERNAME "Enter your username" "user"
 prompt_default HOSTNAME "Enter your hostname" "archpc"
 prompt_default SWAP_SIZE "Enter swapfile size in MB" "4096"
 prompt_default LOCALE "Enter system locale" "en_US.UTF-8"
-prompt_default TIMEZONE "Enter timezone (Region/City)" "America/New_York"
+prompt_default TIMEZONE "Enter timezone (Region/City)" "Asia/Kolkata"
 
 # Prompt for user password (hidden input)
 read -sp "Enter password for $USERNAME [default: user]: " USERPASS
