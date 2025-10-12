@@ -4,32 +4,26 @@ set -euo pipefail
 echo "=== Arch Installer Configuration ==="
 
 # --- Prompt function ---
-prompt_default() {
+prompt() {
     local var_name=$1
     local prompt_msg=$2
-    local default_val=$3
-    read -p "$prompt_msg [$default_val]: " input
-    eval $var_name="${input:-$default_val}"
+    read -p "$prompt_msg: " input
+    if [ -z "$input" ]; then
+        echo "You must enter a value."
+        exit 1
+    fi
+    eval $var_name="'$input'"
 }
 
 # --- User prompts ---
-prompt_default DISK "Enter target disk (e.g., /dev/sdb or nvme0n1)" "/dev/sdX"
-prompt_default EFI_SIZE "Enter EFI partition size (MiB)" "500MiB"
-prompt_default ROOT_SIZE "Enter root partition size (G)" "100G"
-prompt_default USERNAME "Enter your username" "user"
-prompt_default HOSTNAME "Enter your hostname" "archpc"
-prompt_default SWAP_SIZE "Enter swapfile size in MB" "4096"
-prompt_default LOCALE "Enter system locale" "en_US.UTF-8"
-prompt_default TIMEZONE "Enter timezone (Region/City)" "Asia/Kolkata"
+prompt DISK "Enter target disk (e.g., /dev/sdb or nvme0n1)"
+prompt USERNAME "Enter your username"
+prompt HOSTNAME "Enter your hostname"
 
-# Prompt passwords
-read -sp "Enter password for $USERNAME [default: $USERNAME]: " USERPASS
+read -sp "Enter password for $USERNAME: " USERPASS
 echo
-USERPASS=${USERPASS:-$USERNAME}
-
-read -sp "Enter root password [default: root]: " ROOTPASS
+read -sp "Enter root password: " ROOTPASS
 echo
-ROOTPASS=${ROOTPASS:-root}
 
 # Ensure /dev/ prefix
 [[ "$DISK" != /dev/* ]] && DISK="/dev/$DISK"
@@ -46,37 +40,39 @@ read -p "All data on $DISK will be erased. Continue? [y/N]: " CONFIRM
 
 echo "=== Configuration complete ==="
 echo "DISK=$DISK"
-echo "EFI_SIZE=$EFI_SIZE"
-echo "ROOT_SIZE=$ROOT_SIZE"
 echo "USERNAME=$USERNAME"
 echo "HOSTNAME=$HOSTNAME"
-echo "SWAP_SIZE=$SWAP_SIZE MB"
-echo "LOCALE=$LOCALE"
-echo "TIMEZONE=$TIMEZONE"
 
 # --- Partitioning ---
 echo "=== Partitioning $DISK ==="
-# Optional: wipe disk completely
-# sgdisk --zap-all $DISK
 
+EFI_SIZE="500MiB"
+ROOT_SIZE="100G"
+
+# Create partitions
 parted -s "$DISK" mklabel gpt
-parted -s "$DISK" mkpart ESP fat32 1MiB "$EFI_SIZE"
+parted -s "$DISK" mkpart ESP fat32 1MiB $EFI_SIZE
 parted -s "$DISK" set 1 boot on
-parted -s "$DISK" mkpart ROOT ext4 "$EFI_SIZE" "$ROOT_SIZE"
-parted -s "$DISK" mkpart HOME ext4 "$ROOT_SIZE" 100%
+parted -s "$DISK" mkpart ROOT ext4 $EFI_SIZE $ROOT_SIZE
+parted -s "$DISK" mkpart HOME ext4 $ROOT_SIZE 100%
 
-# Partition variables
-EFI_PART="${DISK}p1"
-ROOT_PART="${DISK}p2"
-HOME_PART="${DISK}p3"
+# Detect NVMe vs SATA
+if [[ "$DISK" =~ nvme ]]; then
+    EFI_PART="${DISK}p1"
+    ROOT_PART="${DISK}p2"
+    HOME_PART="${DISK}p3"
+else
+    EFI_PART="${DISK}1"
+    ROOT_PART="${DISK}2"
+    HOME_PART="${DISK}3"
+fi
 
 # Format partitions
 mkfs.fat -F32 "$EFI_PART"
 mkfs.ext4 "$ROOT_PART"
 mkfs.ext4 "$HOME_PART"
 
-# --- Mounting ---
-echo "=== Mounting partitions ==="
+# Mount partitions
 mount "$ROOT_PART" /mnt
 mkdir -p /mnt/home
 mount "$HOME_PART" /mnt/home
@@ -99,13 +95,13 @@ genfstab -U /mnt >> /mnt/etc/fstab
 # --- Chroot configuration ---
 arch-chroot /mnt /bin/bash <<EOF
 # Timezone
-ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
 hwclock --systohc
 
 # Locale
-sed -i "s/#$LOCALE/$LOCALE/" /etc/locale.gen
+echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
-echo "LANG=$LOCALE" > /etc/locale.conf
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
 
 # Hostname
 echo "$HOSTNAME" > /etc/hostname
@@ -129,6 +125,7 @@ echo "GRUB_DISABLE_OS_PROBER=false" >> /etc/default/grub
 grub-mkconfig -o /boot/grub/grub.cfg
 
 # Swapfile
+SWAP_SIZE=4096
 fallocate -l ${SWAP_SIZE}M /swapfile
 chmod 600 /swapfile
 mkswap /swapfile
