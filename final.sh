@@ -3,7 +3,6 @@ set -euo pipefail
 
 echo "=== Arch Installer Configuration ==="
 
-# --- Prompt function ---
 prompt() {
     local var_name=$1
     local prompt_msg=$2
@@ -15,7 +14,6 @@ prompt() {
     eval $var_name="'$input'"
 }
 
-# --- User prompts ---
 prompt DISK "Enter target disk (e.g., /dev/sdb or nvme0n1)"
 prompt USERNAME "Enter your username"
 prompt HOSTNAME "Enter your hostname"
@@ -25,16 +23,13 @@ echo
 read -sp "Enter root password: " ROOTPASS
 echo
 
-# Ensure /dev/ prefix
 [[ "$DISK" != /dev/* ]] && DISK="/dev/$DISK"
 
-# Confirm disk exists
 if [ ! -b "$DISK" ]; then
     echo "Disk $DISK not found!"
     exit 1
 fi
 
-# Warn before wiping
 read -p "All data on $DISK will be erased. Continue? [y/N]: " CONFIRM
 [[ $CONFIRM != "y" && $CONFIRM != "Y" ]] && echo "Aborted." && exit 0
 
@@ -43,20 +38,17 @@ echo "DISK=$DISK"
 echo "USERNAME=$USERNAME"
 echo "HOSTNAME=$HOSTNAME"
 
-# --- Partitioning ---
 echo "=== Partitioning $DISK ==="
 
 EFI_SIZE="500MiB"
 ROOT_SIZE="100G"
 
-# Create partitions
 parted -s "$DISK" mklabel gpt
 parted -s "$DISK" mkpart ESP fat32 1MiB $EFI_SIZE
 parted -s "$DISK" set 1 boot on
 parted -s "$DISK" mkpart ROOT ext4 $EFI_SIZE $ROOT_SIZE
 parted -s "$DISK" mkpart HOME ext4 $ROOT_SIZE 100%
 
-# Detect NVMe vs SATA
 if [[ "$DISK" =~ nvme ]]; then
     EFI_PART="${DISK}p1"
     ROOT_PART="${DISK}p2"
@@ -67,12 +59,10 @@ else
     HOME_PART="${DISK}3"
 fi
 
-# Format partitions
 mkfs.fat -F32 "$EFI_PART"
 mkfs.ext4 -F "$ROOT_PART"
 mkfs.ext4 -F "$HOME_PART"
 
-# Mount partitions
 mount "$ROOT_PART" /mnt
 mkdir -p /mnt/home
 mount "$HOME_PART" /mnt/home
@@ -81,7 +71,6 @@ mount "$EFI_PART" /mnt/boot
 
 lsblk
 
-# --- Base system installation ---
 echo "=== Installing base system ==="
 pacstrap /mnt base linux linux-firmware linux-headers nano vim git sudo bash-completion kitty \
     networkmanager dhclient grub efibootmgr os-prober xorg-server xorg-xinit xorg-apps \
@@ -89,10 +78,8 @@ pacstrap /mnt base linux linux-firmware linux-headers nano vim git sudo bash-com
     python python-pip ttf-dejavu ttf-liberation noto-fonts pulseaudio wireplumber \
     pulseaudio-alsa pavucontrol brightnessctl nautilus gnome-control-center tlp tar wl-clipboard --noconfirm
 
-# Generate fstab
 genfstab -U /mnt >> /mnt/etc/fstab
 
-# --- Chroot configuration ---
 arch-chroot /mnt /bin/bash <<EOF
 # Timezone
 ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
