@@ -60,7 +60,8 @@ btrfs subvolume create /mnt/@snapshots
 
 umount /mnt
 
-echo "=== Mounting ==="
+echo "=== Mounting BTRFS Layout ==="
+
 mount -o noatime,compress=zstd,space_cache=v2,subvol=@ "$ROOT_PART" /mnt
 
 mkdir -p /mnt/{home,var/log,var/cache/pacman/pkg,.snapshots,boot}
@@ -72,45 +73,48 @@ mount -o noatime,compress=zstd,space_cache=v2,subvol=@snapshots "$ROOT_PART" /mn
 
 mount "$EFI_PART" /mnt/boot
 
-
 echo "=== Installing Base System ==="
+
 pacstrap -K /mnt \
     base linux linux-headers linux-firmware \
     amd-ucode btrfs-progs sudo \
     grub efibootmgr os-prober \
-    networkmanager \
-    nvidia nvidia-utils nvidia-dkms
+    networkmanager
 
 genfstab -U /mnt >> /mnt/etc/fstab
 
-echo "=== Configuring System ==="
+echo "=== Entering chroot and configuring ==="
 
 arch-chroot /mnt /bin/bash <<EOF
 
+# Timezone
 ln -sf /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
 hwclock --systohc
 
+# Locale
 echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 
+# Hostname
 echo "$HOSTNAME" > /etc/hostname
 echo "127.0.1.1  $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
 
+# Root password
 echo "root:$ROOTPASS" | chpasswd
 
+# Create user
 useradd -m -G wheel -s /bin/bash $USERNAME
 echo "$USERNAME:$USERPASS" | chpasswd
 
+# Enable sudo
 sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
+# Enable NetworkManager
 systemctl enable NetworkManager
 
-echo "options nvidia_drm modeset=1" > /etc/modprobe.d/nvidia-kms.conf
-
-ROOTUUID=\$(blkid -s UUID -o value $ROOT_PART)
-
-sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash nowatchdog loglevel=3 nvidia_drm.modeset=1 amd_pstate=active resume=UUID='"'\$ROOTUUID'"'"/' /etc/default/grub
+# GRUB (no Nvidia here)
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash nowatchdog loglevel=3"/' /etc/default/grub
 
 echo "GRUB_DISABLE_OS_PROBER=false" >> /etc/default/grub
 
@@ -126,4 +130,4 @@ echo "/swapfile none swap defaults 0 0" >> /etc/fstab
 
 EOF
 
-echo "=== Installation Complete! ==="
+echo "=== Base Installation Complete ==="
